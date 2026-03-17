@@ -2,6 +2,13 @@ from pathlib import Path
 import re
 import pandas as pd
 
+from src.config import (
+    MAIKIN_RAW,
+    CPI_RAW,
+    MAIKIN_CPI_OUTPUT,
+    ensure_dirs,
+)
+
 ANNUAL_MONTH = 99
 BASE_YEAR = 2019
 
@@ -174,15 +181,15 @@ def add_real_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def build_dataset(maikin_path: str | Path, cpi_path: str | Path) -> pd.DataFrame:
-    df_maikin = load_maikin(maikin_path)
+def build_dataset() -> pd.DataFrame:
+    df_maikin = load_maikin(MAIKIN_RAW)
     df_maikin = clean_maikin_codes(df_maikin)
     df_maikin = prepare_maikin(df_maikin)
     base_2019 = build_base_2019(df_maikin)
     df_maikin = add_index_columns(df_maikin, base_2019)
     df_maikin = finalize_maikin(df_maikin)
 
-    df_cpi = load_cpi(cpi_path)
+    df_cpi = load_cpi(CPI_RAW)
     df_cpi = prepare_cpi(df_cpi)
 
     df = merge_maikin_cpi(df_maikin, df_cpi)
@@ -190,6 +197,15 @@ def build_dataset(maikin_path: str | Path, cpi_path: str | Path) -> pd.DataFrame
     return df
 
 
-def save_dataset(df: pd.DataFrame, output_path: str | Path) -> None:
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_path, index=False, encoding='utf-8-sig')
+def save_dataset(df: pd.DataFrame) -> None:
+    ensure_dirs()
+    df.to_csv(MAIKIN_CPI_OUTPUT, index=False, encoding="utf-8-sig")
+
+def main() -> None:
+    df = build_dataset()
+    save_dataset(df)
+    print(df.head())
+    print(df.shape)
+
+if __name__ == "__main__":
+    main()
